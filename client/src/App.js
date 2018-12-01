@@ -54,7 +54,7 @@ function NoMatch() {
 function App() {
   return (
     <Switch>
-      <Route path="/work/:workdId/editing" component={EditingPage} />
+      <Route path="/work/:workId/editing" component={EditingPage} />
       <Route component={NoMatch} />
     </Switch>
   );

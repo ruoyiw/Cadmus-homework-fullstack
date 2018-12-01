@@ -4,19 +4,35 @@ import { Value } from "slate";
 import Editor from "./RichTextEditor";
 import notesJSON from "../utils/notes.json";
 
+const { localStorage } = global.window;
+
 class Notes extends React.Component {
-  state = {
-    value: Value.fromJSON(notesJSON)
-  };
+  constructor(props) {
+    super(props);
+    this.existingNotes = JSON.parse(localStorage.getItem("note"));
+    this.state = {
+      notesValue: Value.fromJSON(this.existingNotes || notesJSON),
+      hasSaved: false,
+      error: null
+    };
+  }
 
   /** Refer to https://docs.slatejs.org/slate-react/editor#onchange  */
-  onChange = ({ value }) => this.setState({ value });
+  onChange = ({ value }) => {
+    const { notesValue } = this.state;
+    // Check to see if the document has changed before saving.
+    if (value.document !== notesValue.document) {
+      const notesContent = JSON.stringify(value.toJSON());
+      localStorage.setItem("notes", notesContent);
+    }
+    this.setState({ notesValue: value });
+  };
 
   render() {
-    const { value } = this.state;
+    const { notesValue } = this.state;
     return (
       <Editor
-        value={value}
+        value={notesValue}
         onChange={this.onChange}
         placeholder="Jot down your notes..."
       />

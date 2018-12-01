@@ -9,7 +9,7 @@ class SaveSchema extends Schema {
       table.timestamps()
       table.binary('workId', 36).notNullable().references('workId').inTable('works')
       table.longtext('body')
-      table.longtext('note')
+      table.longtext('notes')
     })
   }
 

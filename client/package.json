@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "axios": "^0.18.0",
     "immutable": "^3.8.2",
     "prop-types": "^15.6.2",
     "react": "^16.4.1",
@@ -10,6 +11,7 @@
     "react-router-dom": "^4.3.1",
     "react-scripts": "2.1.1",
     "recompose": "^0.27.1",
+    "save": "^2.3.3",
     "slate": "^0.44.6",
     "slate-plain-serializer": "^0.5.22",
     "slate-react": "^0.21.12",

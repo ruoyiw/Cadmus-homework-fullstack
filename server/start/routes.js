@@ -17,3 +17,9 @@
 const Route = use('Route')
 
 Route.on('/').render('welcome')
+
+/** API route for saving */
+Route.post("/api/saving", "SaveController.saving");
+
+/** API route for loading */
+Route.get("/api/loading/:workId", "SaveController.loading");

@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import styled from "styled-components";
 import { withState } from "recompose";
+// import { combineReducers, createStore } from "redux";
 
 import { Shelf, ShelfToolbar, Desk, Primary } from "../styles/layout";
 import { TabBar, TabBarItem } from "./TabBar";
@@ -17,9 +18,29 @@ const Actions = styled.div`
   display: flex;
 `;
 
+// function productReducer(state = [], action) {
+//   return state;
+// }
+
+// function userReducer(state = "", action) {
+//   return state;
+// }
+
+// const allReducers = combineReducers({
+//   products: productReducer,
+//   user: userReducer
+// });
+
+// const store = createStore(allReducers);
+// console.log(store.getState());
+
 /** Component for the main editing page. */
 function EditingPage(props) {
-  const { tab, changeTab } = props;
+  const { tab, changeTab, match } = props;
+  // const state = {
+  //   hasSaved: false,
+  //   error: null
+  // };
 
   return (
     <React.Fragment>
@@ -48,7 +69,13 @@ function EditingPage(props) {
         </ShelfToolbar>
       </Shelf>
       <Desk>
-        <Primary>{tab === "body" ? <Body /> : <Notes />}</Primary>
+        <Primary>
+          {tab === "body" ? (
+            <Body workId={match.params.workId} />
+          ) : (
+            <Notes workId={match.params.workId} />
+          )}
+        </Primary>
       </Desk>
     </React.Fragment>
   );
@@ -61,7 +88,12 @@ EditingPage.propTypes = {
    */
   tab: PropTypes.string.isRequired,
   /* Callback to change the tab */
-  changeTab: PropTypes.func.isRequired
+  changeTab: PropTypes.func.isRequired,
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      workId: PropTypes.string
+    }).isRequired
+  }).isRequired
 };
 
 /** Holds state for the current tab. */
