@@ -34,3 +34,19 @@ export const Primary = styled.div`
   position: relative;
   overflow-y: auto;
 `;
+
+export const Alert = styled.div`
+  padding: 10px;
+  background-color: #fff0b3;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #ffcc80;
+  color: black;
+  margin-top: 15px;
+  margin-bottom: auto;
+  box-shadow: 2px 2px 2px #aaaaaa;
+  height: 10px;
+  line-height: 10px;
+  font-size: 13px;
+  text-align: center;
+`;

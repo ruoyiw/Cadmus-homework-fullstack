@@ -2,12 +2,17 @@ import React from "react";
 import PropTypes from "prop-types";
 import styled from "styled-components";
 import { withState } from "recompose";
+import { Value } from "slate";
+import axios from "axios";
 
-import { Shelf, ShelfToolbar, Desk, Primary } from "../styles/layout";
+import { Shelf, ShelfToolbar, Desk, Primary, Alert } from "../styles/layout";
 import { TabBar, TabBarItem } from "./TabBar";
 
 import Body from "./Body";
 import Notes from "./Notes";
+import SaveIndicator from "./SaveIndicator";
+import bodyJSON from "../utils/body.json";
+import notesJSON from "../utils/notes.json";
 
 const Count = styled.div`
   padding: 0px 18px;
@@ -17,42 +22,143 @@ const Actions = styled.div`
   display: flex;
 `;
 
-const Alert = styled.div`
-  padding: 10px;
-  background-color: #f44336; /* Red */
-  color: white;
-  margin-top: 10px;
-  margin-bottom: auto;
-  box-shadow: 2px 2px 2px grey;
-`;
-
 /** Component for the main editing page. */
 class EditingPage extends React.Component {
-  state = {
-    hasSaved: null,
-    error: null
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      bodyValue: Value.fromJSON(bodyJSON),
+      notesValue: Value.fromJSON(notesJSON),
+      hasSaved: null,
+      error: null
+    };
+  }
 
-  handleSaveStatus = (save, err) => {
+  componentDidMount() {
+    this.handleLoading();
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timer);
+  }
+
+  /** The function when the content in Body editor is changed  */
+  onChangeBody = ({ value }) => {
+    const { bodyValue } = this.state;
+    // Check to see if the document has changed before saving.
+    if (value.document !== bodyValue.document) {
+      this.setState({
+        hasSaved: false,
+        error: null
+      });
+      // The handleSaving function will execute after 500ms in order to show the transition process of save status more clearly
+      this.time = setTimeout(() => {
+        this.handleSaving();
+      }, 500);
+    }
     this.setState({
-      hasSaved: save,
-      error: err
+      bodyValue: value
     });
   };
 
-  render() {
-    const { tab, changeTab, match } = this.props;
-    const { hasSaved, error } = this.state;
-    let saveStatus;
-    if (hasSaved === null) {
-      saveStatus = "";
-    } else if (hasSaved && !error) {
-      saveStatus = "All changes saved to the Cloud";
-    } else if (!hasSaved && !error) {
-      saveStatus = "Saving...";
-    } else {
-      saveStatus = "Unsaved changes";
+  /** The function when the content in Notes editor is changed  */
+  onChangeNotes = ({ value }) => {
+    const { notesValue } = this.state;
+    // Check to see if the document has changed before saving.
+    if (value.document !== notesValue.document) {
+      this.setState({
+        hasSaved: false,
+        error: null
+      });
+      // The handleSaving function will execute after 500ms in order to show the transition process of save status more clearly
+      this.time = setTimeout(() => {
+        this.handleSaving();
+      }, 500);
     }
+    this.setState({
+      notesValue: value
+    });
+  };
+
+  /** Make network requests automatically to sync the save payload to the server. */
+  async handleSaving() {
+    const { bodyValue, notesValue } = this.state;
+    const { match } = this.props;
+    const url = "http://127.0.0.1:3333/api/saving";
+    const postData = {
+      workId: match.params.workId,
+      bodySave: JSON.stringify(bodyValue),
+      notesSave: JSON.stringify(notesValue)
+    };
+    await axios
+      .post(url, postData)
+      .then(response => {
+        if (response.data.status === "success") {
+          this.setState({
+            hasSaved: true,
+            error: null
+          });
+        } else {
+          this.setState({
+            hasSaved: false,
+            error: response.data.status
+          });
+        }
+      })
+      .catch(err => {
+        this.setState({
+          hasSaved: false,
+          error: err.toString()
+        });
+      });
+  }
+
+  /** Make network request(s) to load its last save and populate the editors. */
+  async handleLoading() {
+    const { match } = this.props;
+    const url = "http://127.0.0.1:3333/api/loading/";
+    await axios
+      .get(url + match.params.workId)
+      .then(response => {
+        if (response.data.status === "success") {
+          if (response.data.bodyJSON) {
+            this.setState({
+              bodyValue: Value.fromJSON(JSON.parse(response.data.bodyJSON)),
+              hasSaved: true,
+              error: null
+            });
+          }
+          if (response.data.notesJSON) {
+            this.setState({
+              notesValue: Value.fromJSON(JSON.parse(response.data.notesJSON)),
+              hasSaved: true,
+              error: null
+            });
+          }
+          if (!response.data.bodyJSON && !response.data.notesJSON) {
+            this.setState({
+              hasSaved: null,
+              error: null
+            });
+          }
+        } else {
+          this.setState({
+            hasSaved: false,
+            error: response.data.status
+          });
+        }
+      })
+      .catch(err => {
+        this.setState({
+          hasSaved: false,
+          error: err.toString()
+        });
+      });
+  }
+
+  render() {
+    const { tab, changeTab } = this.props;
+    const { bodyValue, notesValue, hasSaved, error } = this.state;
     return (
       <React.Fragment>
         <Shelf>
@@ -71,14 +177,11 @@ class EditingPage extends React.Component {
                 Notes
               </TabBarItem>
             </TabBar>
-            {error ? <Alert>Fail to connect</Alert> : null}
+            {error ? (
+              <Alert>Fail to connect. Please check the network.</Alert>
+            ) : null}
             <Actions>
-              {/* {hasSaved && !error ? (
-                <em>All changes saved to the Cloud</em>
-              ) : (
-                <em>Saving...</em>
-              )} */}
-              <em>{saveStatus}</em>
+              <SaveIndicator hasSaved={hasSaved} error={error} />
               <Count>
                 <strong>Word Count:</strong> ???
               </Count>
@@ -88,15 +191,9 @@ class EditingPage extends React.Component {
         <Desk>
           <Primary>
             {tab === "body" ? (
-              <Body
-                workId={match.params.workId}
-                handleSaveStatus={this.handleSaveStatus}
-              />
+              <Body value={bodyValue} onChange={this.onChangeBody} />
             ) : (
-              <Notes
-                workId={match.params.workId}
-                handleSaveStatus={this.handleSaveStatus}
-              />
+              <Notes value={notesValue} onChange={this.onChangeNotes} />
             )}
           </Primary>
         </Desk>

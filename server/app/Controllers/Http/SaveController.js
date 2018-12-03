@@ -9,10 +9,9 @@ class SaveController {
    * API endpoint to accept saves payloads over HTTP
    */
   async saving({request}){
-
     try {
       const requestData = request.all();
-      const work = await Work.findBy({ "workId": requestData.work  });
+      const work = await Work.findBy({ "workId": requestData.workId });
       const save = new Save();
       save.workId = work.workId;
       save.body = requestData.bodySave;
@@ -35,20 +34,18 @@ class SaveController {
   async loading({params}){
       try {
         const workId = params.workId;
-        console.log(workId)
-        const saves = await Database.table('saves')
-        .where("workId", workId).orderBy('id', 'desc');
-        console.log(saves[0])
-        if (saves) {
+        const saves = await Database.table("saves")
+        .where("workId", workId).orderBy("id", "desc");
+        if (saves.length > 0) {
             return JSON.stringify({
                 bodyJSON: saves[0].body,
-                notesJson: saves[0].notes,
+                notesJSON: saves[0].notes,
                 status: "success"
             })
         } else {
             return JSON.stringify({
                 bodyJSON: null,
-                notesJson: null,
+                notesJSON: null,
                 status: "success"
             })
         }
@@ -58,9 +55,7 @@ class SaveController {
             status: "fail"
         })
       }
-
   }
-
 }
 
 module.exports = SaveController
