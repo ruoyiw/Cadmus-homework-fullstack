@@ -2,7 +2,6 @@ import React from "react";
 import PropTypes from "prop-types";
 import styled from "styled-components";
 import { withState } from "recompose";
-// import { combineReducers, createStore } from "redux";
 
 import { Shelf, ShelfToolbar, Desk, Primary } from "../styles/layout";
 import { TabBar, TabBarItem } from "./TabBar";
@@ -18,67 +17,92 @@ const Actions = styled.div`
   display: flex;
 `;
 
-// function productReducer(state = [], action) {
-//   return state;
-// }
-
-// function userReducer(state = "", action) {
-//   return state;
-// }
-
-// const allReducers = combineReducers({
-//   products: productReducer,
-//   user: userReducer
-// });
-
-// const store = createStore(allReducers);
-// console.log(store.getState());
+const Alert = styled.div`
+  padding: 10px;
+  background-color: #f44336; /* Red */
+  color: white;
+  margin-top: 10px;
+  margin-bottom: auto;
+  box-shadow: 2px 2px 2px grey;
+`;
 
 /** Component for the main editing page. */
-function EditingPage(props) {
-  const { tab, changeTab, match } = props;
-  // const state = {
-  //   hasSaved: false,
-  //   error: null
-  // };
+class EditingPage extends React.Component {
+  state = {
+    hasSaved: null,
+    error: null
+  };
 
-  return (
-    <React.Fragment>
-      <Shelf>
-        <ShelfToolbar>
-          <TabBar>
-            <TabBarItem
-              selected={tab === "body"}
-              onClick={() => changeTab("body")}
-            >
-              Body
-            </TabBarItem>
-            <TabBarItem
-              selected={tab === "notes"}
-              onClick={() => changeTab("notes")}
-            >
-              Notes
-            </TabBarItem>
-          </TabBar>
-          <Actions>
-            <em>unsaved changes</em>
-            <Count>
-              <strong>Word Count:</strong> ???
-            </Count>
-          </Actions>
-        </ShelfToolbar>
-      </Shelf>
-      <Desk>
-        <Primary>
-          {tab === "body" ? (
-            <Body workId={match.params.workId} />
-          ) : (
-            <Notes workId={match.params.workId} />
-          )}
-        </Primary>
-      </Desk>
-    </React.Fragment>
-  );
+  handleSaveStatus = (save, err) => {
+    this.setState({
+      hasSaved: save,
+      error: err
+    });
+  };
+
+  render() {
+    const { tab, changeTab, match } = this.props;
+    const { hasSaved, error } = this.state;
+    let saveStatus;
+    if (hasSaved === null) {
+      saveStatus = "";
+    } else if (hasSaved && !error) {
+      saveStatus = "All changes saved to the Cloud";
+    } else if (!hasSaved && !error) {
+      saveStatus = "Saving...";
+    } else {
+      saveStatus = "Unsaved changes";
+    }
+    return (
+      <React.Fragment>
+        <Shelf>
+          <ShelfToolbar>
+            <TabBar>
+              <TabBarItem
+                selected={tab === "body"}
+                onClick={() => changeTab("body")}
+              >
+                Body
+              </TabBarItem>
+              <TabBarItem
+                selected={tab === "notes"}
+                onClick={() => changeTab("notes")}
+              >
+                Notes
+              </TabBarItem>
+            </TabBar>
+            {error ? <Alert>Fail to connect</Alert> : null}
+            <Actions>
+              {/* {hasSaved && !error ? (
+                <em>All changes saved to the Cloud</em>
+              ) : (
+                <em>Saving...</em>
+              )} */}
+              <em>{saveStatus}</em>
+              <Count>
+                <strong>Word Count:</strong> ???
+              </Count>
+            </Actions>
+          </ShelfToolbar>
+        </Shelf>
+        <Desk>
+          <Primary>
+            {tab === "body" ? (
+              <Body
+                workId={match.params.workId}
+                handleSaveStatus={this.handleSaveStatus}
+              />
+            ) : (
+              <Notes
+                workId={match.params.workId}
+                handleSaveStatus={this.handleSaveStatus}
+              />
+            )}
+          </Primary>
+        </Desk>
+      </React.Fragment>
+    );
+  }
 }
 
 EditingPage.propTypes = {

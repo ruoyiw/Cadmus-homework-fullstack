@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Value } from "slate";
 
 import Editor from "./RichTextEditor";
@@ -19,13 +20,15 @@ class Notes extends React.Component {
 
   /** Refer to https://docs.slatejs.org/slate-react/editor#onchange  */
   onChange = ({ value }) => {
-    const { notesValue } = this.state;
+    const { notesValue, hasSaved, error } = this.state;
+    const { handleSaveStatus } = this.props;
     // Check to see if the document has changed before saving.
     if (value.document !== notesValue.document) {
       const notesContent = JSON.stringify(value.toJSON());
       localStorage.setItem("notes", notesContent);
     }
     this.setState({ notesValue: value });
+    handleSaveStatus(hasSaved, error);
   };
 
   render() {
@@ -39,5 +42,9 @@ class Notes extends React.Component {
     );
   }
 }
+
+Notes.propTypes = {
+  handleSaveStatus: PropTypes.func.isRequired
+};
 
 export default Notes;

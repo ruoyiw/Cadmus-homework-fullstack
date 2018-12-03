@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Value } from "slate";
 import axios from "axios";
 
@@ -18,28 +19,49 @@ class Body extends React.Component {
     };
   }
 
+  componentDidMount() {
+    this.handleLoadBody();
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.timer);
+  }
+
   /** Refer to https://docs.slatejs.org/slate-react/editor#onchange  */
   onChange = ({ value }) => {
-    const { bodyValue } = this.state;
-
+    const { bodyValue, hasSaved, error } = this.state;
+    const { handleSaveStatus } = this.props;
     // Check to see if the document has changed before saving.
     if (value.document !== bodyValue.document) {
+      this.setState(
+        {
+          hasSaved: false,
+          error: null
+        },
+        () => handleSaveStatus(hasSaved, error)
+      );
       const bodyContent = JSON.stringify(value.toJSON());
       localStorage.setItem("body", bodyContent);
-      this.handleSaveBody();
+      this.time = setTimeout(() => {
+        this.handleSaveBody();
+      }, 2000);
+      console.log("saved: " + hasSaved);
     }
-    this.setState({ bodyValue: value });
+    this.setState({
+      bodyValue: value
+    });
   };
 
   async handleSaveBody() {
-    const { bodyValue } = this.state;
-    const { workId } = this.props;
+    const { bodyValue, hasSaved, error } = this.state;
+    const { workId, handleSaveStatus } = this.props;
     const url = "http://127.0.0.1:3333/api/saving";
     let notes;
-    if (JSON.parse(localStorage.getItem("notes"))) {
-      notes = JSON.stringify(JSON.parse(localStorage.getItem("notes")));
-    } else {
+    console.log(localStorage.getItem("notes"));
+    if (localStorage.getItem("notes") === "undefined") {
       notes = null;
+    } else {
+      notes = localStorage.getItem("notes");
     }
     const postData = {
       work: workId,
@@ -49,25 +71,84 @@ class Body extends React.Component {
     await axios
       .post(url, postData)
       .then(response => {
-        console.log("call2")
+        console.log("call1");
         if (response.data.status === "success") {
-          this.setState({
-            hasSaved: true,
-            error: null
-          });
+          this.setState(
+            {
+              hasSaved: true,
+              error: null
+            },
+            () => handleSaveStatus(hasSaved, error)
+          );
         } else {
-          this.setState({
-            hasSaved: false,
-            error: response.data.status
-          });
+          this.setState(
+            {
+              hasSaved: false,
+              error: response.data.status
+            },
+            () => handleSaveStatus(hasSaved, error)
+          );
         }
       })
       .catch(err => {
-        this.setState({
-          hasSaved: false,
-          error: err.toString
-        });
+        this.setState(
+          {
+            hasSaved: false,
+            error: err.toString
+          },
+          () => handleSaveStatus(hasSaved, error)
+        );
       });
+  }
+
+  async handleLoadBody() {
+    const { hasSaved, error } = this.state;
+    const { workId, handleSaveStatus } = this.props;
+    const url = "http://127.0.0.1:3333/api/loading/";
+    await axios
+      .get(url + workId)
+      .then(response => {
+        console.log("call2");
+        if (response.data.status === "success") {
+          if (response.data.bodyJSON) {
+            this.setState(
+              {
+                bodyValue: Value.fromJSON(JSON.parse(response.data.bodyJSON)),
+                hasSaved: true,
+                error: null
+              },
+              () => handleSaveStatus(hasSaved, error)
+            );
+            localStorage.setItem("notes", response.data.notesJSON);
+          } else {
+            this.setState(
+              {
+                hasSaved: null,
+                error: null
+              },
+              () => handleSaveStatus(hasSaved, error)
+            );
+          }
+        } else {
+          this.setState(
+            {
+              hasSaved: false,
+              error: response.data.status
+            },
+            () => handleSaveStatus(hasSaved, error)
+          );
+        }
+      })
+      .catch(err => {
+        this.setState(
+          {
+            hasSaved: false,
+            error: err.toString
+          },
+          () => handleSaveStatus(hasSaved, error)
+        );
+      });
+    console.log("saved: " + hasSaved);
   }
 
   render() {
@@ -81,5 +162,10 @@ class Body extends React.Component {
     );
   }
 }
+
+Body.propTypes = {
+  handleSaveStatus: PropTypes.func.isRequired,
+  workId: PropTypes.string.isRequired
+};
 
 export default Body;

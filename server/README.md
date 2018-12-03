@@ -33,3 +33,10 @@ npm install mysql --save
 ```js
 adonis migration:run
 ```
+
+```js
+adonis seed
+```
+```
+npm install axios -- save
+```

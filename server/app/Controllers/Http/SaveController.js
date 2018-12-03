@@ -1,4 +1,5 @@
 'use strict'
+const Database = use("Database");
 const Work = use("App/Models/Work");
 const Save = use("App/Models/Save");
 
@@ -31,12 +32,31 @@ class SaveController {
   /**
    * API endpoint to serve the last save for the given Work ID back over HTTP
    */
-  async loading({params, response}){
+  async loading({params}){
       try {
-
+        const workId = params.workId;
+        console.log(workId)
+        const saves = await Database.table('saves')
+        .where("workId", workId).orderBy('id', 'desc');
+        console.log(saves[0])
+        if (saves) {
+            return JSON.stringify({
+                bodyJSON: saves[0].body,
+                notesJson: saves[0].notes,
+                status: "success"
+            })
+        } else {
+            return JSON.stringify({
+                bodyJSON: null,
+                notesJson: null,
+                status: "success"
+            })
+        }
       } catch (err) {
         console.log(err)
-
+        return JSON.stringify({
+            status: "fail"
+        })
       }
 
   }
