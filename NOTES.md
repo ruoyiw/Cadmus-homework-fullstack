@@ -56,7 +56,17 @@ Adonis will try to serve for development on `http://127.0.0.1:3333` by default.
 ![run adonis server](screenshots/adonisServe.png)
 
 
-## Package Added in Cliend Side
+## Running of Client
+The package added for client side is:
+
 | Package        | Install           | Import  |
 | -------------  |:-------------:    | -----:  |
 | Axios | yarn add axios -- save | import axios from "axios";|
+
+To install the dependencies:
+
+    yarn install
+
+To run the development server:
+
+    yarn start
