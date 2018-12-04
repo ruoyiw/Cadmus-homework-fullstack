@@ -135,6 +135,7 @@ class EditingPage extends React.Component {
               error: null
             });
           }
+          // if both of the body save and notes save is null, it indicates nothing has been saved at beginning
           if (!response.data.bodyJSON && !response.data.notesJSON) {
             this.setState({
               hasSaved: null,
@@ -177,6 +178,7 @@ class EditingPage extends React.Component {
                 Notes
               </TabBarItem>
             </TabBar>
+            {/* The Alert banner to indicate the network connection is fail */}
             {error ? (
               <Alert>Fail to connect. Please check the network.</Alert>
             ) : null}

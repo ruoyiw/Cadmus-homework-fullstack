@@ -26,17 +26,6 @@ or manually clone the repo and then run `npm install`.
 
 Run the following command to run startup migrations.
 
-```
-npm install mysql --save
-```
-
 ```js
 adonis migration:run
-```
-
-```js
-adonis seed
-```
-```
-npm install axios -- save
 ```
