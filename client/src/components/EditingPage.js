@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { withState } from "recompose";
 import { Value } from "slate";
 import axios from "axios";
+import { debounce } from "lodash";
 
 import { Shelf, ShelfToolbar, Desk, Primary, Alert } from "../styles/layout";
 import { TabBar, TabBarItem } from "./TabBar";
@@ -24,14 +25,18 @@ const Actions = styled.div`
 
 /** Component for the main editing page. */
 class EditingPage extends React.Component {
+  debouncedSaving = debounce(this.handleSaving.bind(this), 500);
+
   constructor(props) {
     super(props);
     this.state = {
       bodyValue: Value.fromJSON(bodyJSON),
       notesValue: Value.fromJSON(notesJSON),
       hasSaved: null,
-      error: null
+      error: null,
+      finishLoading: false
     };
+    this.flightSavingNum = 0;
   }
 
   componentDidMount() {
@@ -39,7 +44,7 @@ class EditingPage extends React.Component {
   }
 
   componentWillUnmount() {
-    clearTimeout(this.timer);
+    this.debouncedSaving.cancel();
   }
 
   /** The function when the content in Body editor is changed  */
@@ -52,10 +57,8 @@ class EditingPage extends React.Component {
         error: null
       });
       // The handleSaving function will execute after 500ms in order to show the transition process of save status more clearly
-      this.time = setTimeout(() => {
-        this.handleSaving();
-      }, 500);
     }
+    this.debouncedSaving();
     this.setState({
       bodyValue: value
     });
@@ -71,9 +74,7 @@ class EditingPage extends React.Component {
         error: null
       });
       // The handleSaving function will execute after 500ms in order to show the transition process of save status more clearly
-      this.time = setTimeout(() => {
-        this.handleSaving();
-      }, 500);
+      this.debouncedSaving = debounce(this.handleSaving.bind(this), 500);
     }
     this.setState({
       notesValue: value
@@ -82,6 +83,8 @@ class EditingPage extends React.Component {
 
   /** Make network requests automatically to sync the save payload to the server. */
   async handleSaving() {
+    this.flightSavingNum += 1;
+    console.log(this.flightSavingNum);
     const { bodyValue, notesValue } = this.state;
     const { match } = this.props;
     const url = "http://127.0.0.1:3333/api/saving";
@@ -94,10 +97,12 @@ class EditingPage extends React.Component {
       .post(url, postData)
       .then(response => {
         if (response.data.status === "success") {
-          this.setState({
-            hasSaved: true,
-            error: null
-          });
+          if (this.flightSavingNum === 1) {
+            this.setState({
+              hasSaved: true,
+              error: null
+            });
+          }
         } else {
           this.setState({
             hasSaved: false,
@@ -111,6 +116,7 @@ class EditingPage extends React.Component {
           error: err.toString()
         });
       });
+    this.flightSavingNum -= 1;
   }
 
   /** Make network request(s) to load its last save and populate the editors. */
@@ -125,21 +131,24 @@ class EditingPage extends React.Component {
             this.setState({
               bodyValue: Value.fromJSON(JSON.parse(response.data.bodyJSON)),
               hasSaved: true,
-              error: null
+              error: null,
+              finishLoading: true
             });
           }
           if (response.data.notesJSON) {
             this.setState({
               notesValue: Value.fromJSON(JSON.parse(response.data.notesJSON)),
               hasSaved: true,
-              error: null
+              error: null,
+              finishLoading: true
             });
           }
           // if both of the body save and notes save is null, it indicates nothing has been saved at beginning
           if (!response.data.bodyJSON && !response.data.notesJSON) {
             this.setState({
               hasSaved: null,
-              error: null
+              error: null,
+              finishLoading: true
             });
           }
         } else {
@@ -159,48 +168,58 @@ class EditingPage extends React.Component {
 
   render() {
     const { tab, changeTab } = this.props;
-    const { bodyValue, notesValue, hasSaved, error } = this.state;
-    return (
-      <React.Fragment>
-        <Shelf>
-          <ShelfToolbar>
-            <TabBar>
-              <TabBarItem
-                selected={tab === "body"}
-                onClick={() => changeTab("body")}
-              >
-                Body
-              </TabBarItem>
-              <TabBarItem
-                selected={tab === "notes"}
-                onClick={() => changeTab("notes")}
-              >
-                Notes
-              </TabBarItem>
-            </TabBar>
-            {/* The Alert banner to indicate the network connection is fail */}
-            {error ? (
-              <Alert>Fail to connect. Please check the network.</Alert>
-            ) : null}
-            <Actions>
-              <SaveIndicator hasSaved={hasSaved} error={error} />
-              <Count>
-                <strong>Word Count:</strong> ???
-              </Count>
-            </Actions>
-          </ShelfToolbar>
-        </Shelf>
-        <Desk>
-          <Primary>
-            {tab === "body" ? (
-              <Body value={bodyValue} onChange={this.onChangeBody} />
-            ) : (
-              <Notes value={notesValue} onChange={this.onChangeNotes} />
-            )}
-          </Primary>
-        </Desk>
-      </React.Fragment>
-    );
+    const {
+      bodyValue,
+      notesValue,
+      hasSaved,
+      error,
+      finishLoading
+    } = this.state;
+
+    if (finishLoading) {
+      return (
+        <React.Fragment>
+          <Shelf>
+            <ShelfToolbar>
+              <TabBar>
+                <TabBarItem
+                  selected={tab === "body"}
+                  onClick={() => changeTab("body")}
+                >
+                  Body
+                </TabBarItem>
+                <TabBarItem
+                  selected={tab === "notes"}
+                  onClick={() => changeTab("notes")}
+                >
+                  Notes
+                </TabBarItem>
+              </TabBar>
+              {/* The Alert banner to indicate the network connection is fail */}
+              {error ? (
+                <Alert>Fail to connect. Please check the network.</Alert>
+              ) : null}
+              <Actions>
+                <SaveIndicator hasSaved={hasSaved} error={error} />
+                <Count>
+                  <strong>Word Count:</strong> ???
+                </Count>
+              </Actions>
+            </ShelfToolbar>
+          </Shelf>
+          <Desk>
+            <Primary>
+              {tab === "body" ? (
+                <Body value={bodyValue} onChange={this.onChangeBody} />
+              ) : (
+                <Notes value={notesValue} onChange={this.onChangeNotes} />
+              )}
+            </Primary>
+          </Desk>
+        </React.Fragment>
+      );
+    }
+    return <div />;
   }
 }
 

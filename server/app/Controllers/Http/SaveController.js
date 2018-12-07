@@ -37,13 +37,14 @@ class SaveController {
         const workId = params.workId;
         // Select all saves which are linked to this workId, and sort them in descend order
         // based on the save id (equals to a version number)
-        const saves = await Database.table("saves")
-        .where("workId", workId).orderBy("id", "desc");
+        const save = await Database.table("saves")
+        .where("workId", workId).orderBy("id", "desc").limit(1);
+        console.log(save[0])
         // if one or more saves are found linked to this workId, return the lasted body save and notes save
-        if (saves.length > 0) {
+        if (save[0] !== undefined) {
             return JSON.stringify({
-                bodyJSON: saves[0].body,
-                notesJSON: saves[0].notes,
+                bodyJSON: save[0].body,
+                notesJSON: save[0].notes,
                 status: "success"
             })
         } 
