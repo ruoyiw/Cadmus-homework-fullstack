@@ -74,7 +74,7 @@ class EditingPage extends React.Component {
         error: null
       });
       // The handleSaving function will execute after 500ms in order to show the transition process of save status more clearly
-      this.debouncedSaving = debounce(this.handleSaving.bind(this), 500);
+      this.debouncedSaving();
     }
     this.setState({
       notesValue: value
