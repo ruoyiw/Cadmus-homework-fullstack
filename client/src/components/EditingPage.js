@@ -56,9 +56,8 @@ class EditingPage extends React.Component {
         hasSaved: false,
         error: null
       });
-      // The handleSaving function will execute after 500ms in order to show the transition process of save status more clearly
+      this.debouncedSaving();
     }
-    this.debouncedSaving();
     this.setState({
       bodyValue: value
     });
@@ -73,7 +72,6 @@ class EditingPage extends React.Component {
         hasSaved: false,
         error: null
       });
-      // The handleSaving function will execute after 500ms in order to show the transition process of save status more clearly
       this.debouncedSaving();
     }
     this.setState({
